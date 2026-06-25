@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AEROPORTOS RAA</title>
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+	<script src="https://unpkg.com/@babel/standalone@7.22.20/babel.min.js"></script>
+    <style>
+		@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+
+		body { 
+			font-family: 'Inter', sans-serif; 
+			margin: 0;
+			padding: 0;
+			background-color: #f8fafc; /* bg-slate-50 */
+			color: #0f172a; /* text-slate-900 */
+			overflow: hidden;
+			height: 100vh;
+		}
+
+		.font-mono { 
+			font-family: 'JetBrains Mono', monospace; 
+		}
+
+		@keyframes pulse {
+			0%, 100% { opacity: 1; }
+			50% { opacity: .5; }
+		}
+
+		.animate-pulse { 
+			animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; 
+		}
+
+		/* Custom scrollbar for METAR text if needed */
+		.metar-text {
+			scrollbar-width: none;
+			-ms-overflow-style: none;
+		}
+		.metar-text::-webkit-scrollbar {
+			display: none;
+		}
+	</style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-900 overflow-hidden">
+    <div id="root"></div>
+
+	<script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- DATA ---
+        const airports = [
+            {code:"PDL",icao:"LPPD",rwy:120},
+            {code:"SMA",icao:"LPAZ",rwy:180},
+            {code:"TER",icao:"LPLA",rwy:150},
+            {code:"GRW",icao:"LPGR",rwy:90},
+            {code:"SJZ",icao:"LPSJ",rwy:130},
+            {code:"PIX",icao:"LPPI",rwy:90},
+            {code:"HOR",icao:"LPHR",rwy:100},
+            {code:"FLW",icao:"LPFL",rwy:180},
+            {code:"CVU",icao:"LPCR",rwy:110}
+        ];
+
+        const windLimits = {
+            PDL:{10:{dry:30},20:{dry:30},30:{dry:30},40:{dry:30},50:{dry:34},60:{dry:34},70:{dry:40},80:{dry:40},90:{dry:40},100:{dry:40},110:{dry:40},120:{dry:40},130:{dry:40},140:{dry:40},150:{dry:40},160:{dry:40},170:{dry:34},180:{dry:34},190:{dry:30},200:{dry:30},210:{dry:30},220:{dry:30},230:{dry:34},240:{dry:34},250:{dry:40},260:{dry:40},270:{dry:40},280:{dry:40},290:{dry:40},300:{dry:40},310:{dry:40},320:{dry:40},330:{dry:40},340:{dry:40},350:{dry:35},360:{dry:35}},
+            SMA:{10:{dry:40},20:{dry:40},30:{dry:40},40:{dry:40},50:{dry:37},60:{dry:34},70:{dry:34},80:{dry:32},90:{dry:32},100:{dry:34},110:{dry:35},120:{dry:37},130:{dry:40},140:{dry:40},150:{dry:40},160:{dry:40},170:{dry:40},180:{dry:40},190:{dry:40},200:{dry:40},210:{dry:40},220:{dry:40},230:{dry:37},240:{dry:34},250:{dry:34},260:{dry:32},270:{dry:32},280:{dry:34},290:{dry:35},300:{dry:37},310:{dry:40},320:{dry:40},330:{dry:40},340:{dry:40},350:{dry:40},360:{dry:40}},
+            TER:{10:{dry:40},20:{dry:34},30:{dry:34},40:{dry:30},50:{dry:30},60:{dry:30},70:{dry:30},80:{dry:34},90:{dry:34},100:{dry:40},110:{dry:40},120:{dry:40},130:{dry:40},140:{dry:40},150:{dry:40},160:{dry:40},170:{dry:40},180:{dry:40},190:{dry:40},200:{dry:34},210:{dry:34},220:{dry:30},230:{dry:30},240:{dry:30},250:{dry:30},260:{dry:34},270:{dry:34},280:{dry:40},290:{dry:40},300:{dry:40},310:{dry:40},320:{dry:40},330:{dry:40},340:{dry:40},350:{dry:40},360:{dry:40}},
+            GRW:{10:{dry:30},20:{dry:35},30:{dry:35},40:{dry:40},50:{dry:40},60:{dry:40},70:{dry:40},80:{dry:40},90:{dry:40},100:{dry:40},110:{dry:40},120:{dry:40},130:{dry:40},140:{dry:40},150:{dry:32},160:{dry:30},170:{dry:30},180:{dry:30},190:{dry:30},200:{dry:35},210:{dry:35},220:{dry:40},230:{dry:40},240:{dry:40},250:{dry:40},260:{dry:40},270:{dry:40},280:{dry:40},290:{dry:40},300:{dry:40},310:{dry:40},320:{dry:35},330:{dry:35},340:{dry:30,wet:24},350:{dry:30,wet:24},360:{dry:30,wet:24}},
+            SJZ:{10:{dry:20,wet:16},20:{dry:20,wet:16},30:{dry:20,wet:16},40:{dry:20,wet:16},50:{dry:20,wet:16},60:{dry:20,wet:16},70:{dry:20,wet:16},80:{dry:20,wet:16},90:{dry:20,wet:16},100:{dry:35,wet:28},110:{dry:35,wet:28},120:{dry:35,wet:28},130:{dry:40},140:{dry:40},150:{dry:40},160:{dry:40},170:{dry:40},180:{dry:34},190:{dry:34},200:{dry:30},210:{dry:30},220:{dry:30},230:{dry:30},240:{dry:34},250:{dry:34},260:{dry:40},270:{dry:40},280:{dry:40},290:{dry:40},300:{dry:35,wet:28},310:{dry:35,wet:28},320:{dry:35,wet:28},330:{dry:25,wet:20},340:{dry:25,wet:20},350:{dry:25,wet:20},360:{dry:20,wet:16}},
+            PIX:{10:{dry:30,wet:24},20:{dry:30,wet:24},30:{dry:35,wet:28},40:{dry:35,wet:28},50:{dry:40,wet:30},60:{dry:40},70:{dry:40},80:{dry:40},90:{dry:40},100:{dry:40},110:{dry:40},120:{dry:30,wet:24},130:{dry:30,wet:24},140:{dry:30,wet:24},150:{dry:20},160:{dry:20},170:{dry:20},180:{dry:20},190:{dry:20},200:{dry:20},210:{dry:20},220:{dry:20},230:{dry:30,wet:24},240:{dry:30,wet:24},250:{dry:30,wet:24},260:{dry:40},270:{dry:40},280:{dry:40},290:{dry:40},300:{dry:40},310:{dry:40},320:{dry:38,wet:32},330:{dry:34,wet:28},340:{dry:34,wet:28},350:{dry:30,wet:24},360:{dry:30,wet:24}},
+            HOR:{10:{dry:25},20:{dry:25},30:{dry:25},40:{dry:25},50:{dry:25},60:{dry:25},70:{dry:30},80:{dry:37},90:{dry:37},100:{dry:37},110:{dry:37},120:{dry:37},130:{dry:37},140:{dry:37},150:{dry:37},160:{dry:33},170:{dry:33},180:{dry:30},190:{dry:30},200:{dry:30},210:{dry:30},220:{dry:35},230:{dry:35},240:{dry:40},250:{dry:40},260:{dry:40},270:{dry:40},280:{dry:40},290:{dry:40},300:{dry:35},310:{dry:25},320:{dry:25},330:{dry:25},340:{dry:25},350:{dry:25},360:{dry:25}},
+            FLW:{10:{dry:34},20:{dry:32},30:{dry:31},40:{dry:30},50:{dry:30},60:{dry:28},70:{dry:25},80:{dry:25},90:{dry:25},100:{dry:25},110:{dry:25},120:{dry:25},130:{dry:27},140:{dry:30},150:{dry:30},160:{dry:32},170:{dry:35},180:{dry:30},190:{dry:25},200:{dry:22},210:{dry:20},220:{dry:20},230:{dry:17},240:{dry:15},250:{dry:14},260:{dry:13},270:{dry:13},280:{dry:14},290:{dry:15},300:{dry:16},310:{dry:18},320:{dry:21},330:{dry:25},340:{dry:25},350:{dry:30},360:{dry:35}},
+            CVU:{10:{dry:10},20:{dry:10},30:{dry:10},40:{dry:10},50:{dry:10},60:{dry:10},70:{dry:10},80:{dry:35},90:{dry:35},100:{dry:35},110:{dry:35},120:{dry:35},130:{dry:35},140:{dry:35},150:{dry:25},160:{dry:25},170:{dry:25},180:{dry:25},190:{dry:25},200:{dry:25},210:{dry:25},220:{dry:25},230:{dry:25},240:{dry:25},250:{dry:25},260:{dry:25},270:{dry:25},280:{dry:35},290:{dry:35},300:{dry:35},310:{dry:35},320:{dry:35},330:{dry:10},340:{dry:10},350:{dry:10},360:{dry:10}}
+        };
+
+        // --- UTILS ---
+        const fmtDir = (d) => String(d).padStart(3, "0");
+        const runwayNumber = (h) => ((Math.round(h / 10) % 36) || 36).toString().padStart(2, "0");
+        const angleDiff = (a, b) => { let d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; }
+        const nearest10 = (d) => Math.min(360, Math.max(10, Math.round(d / 10) * 10));
+
+        function metarAgeMinutes(m) {
+            const r = m.match(/\b(\d{2})(\d{2})(\d{2})Z\b/);
+            if (!r) return null;
+            const now = new Date();
+            const z = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), parseInt(r[1], 10), parseInt(r[2], 10), parseInt(r[3], 10)));
+            let diff = (now.getTime() - z.getTime()) / 60000;
+            if (diff < 0) diff += 1440;
+            return Math.round(diff);
+        }
+
+        function hasRain(metar) {
+            return /\b(-|\+)?(RA|DZ|DZRA)\b|\b(SHRA|VCSH)\b/.test(metar);
+        }
+
+        function hasLowVis(metar) {
+            // Fog (FG), Mist (BR), Haze (HZ), Vertical Visibility (VV)
+            if (/\b(FG|BR|HZ|VV\d{3})\b/.test(metar)) return true;
+            // BKN or OVC below 1000ft (e.g., BKN008, OVC005)
+            if (/\b(BKN|OVC)00\d\b/.test(metar)) return true;
+            // Visibility in meters (4 digits)
+            const visMatch = metar.match(/\b(\d{4})\b/);
+            if (visMatch) {
+                const vis = parseInt(visMatch[1], 10);
+                // If visibility is less than 5000m, it's worth a symbol
+                if (vis < 5000) return true;
+            }
+            return false;
+        }
+
+        function parseGeneralWind(m) {
+            const vrb = m.match(/VRB(\d{2})(?:G(\d{2}))?KT/);
+            if (vrb) return { type: "VRB", spd: +vrb[1], gust: vrb[2] ? +vrb[2] : undefined };
+            const fixed = m.match(/(\d{3})(\d{2})(?:G(\d{2}))?KT(?:\s+(\d{3})V(\d{3}))?/);
+            if (fixed) return { type: "FIXED", dir: +fixed[1], spd: +fixed[2], gust: fixed[3] ? +fixed[3] : undefined, varFrom: fixed[4] ? +fixed[4] : undefined, varTo: fixed[5] ? +fixed[5] : undefined };
+            return null;
+        }
+
+        function parseRunwayWinds(m) {
+            const out = [];
+            const re = /RWY(\d{2})\s+(?:(VRB)|(\d{3}))(\d{2})(?:G(\d{2}))?KT(?:\s+(\d{3})V(\d{3}))?/gi;
+            let x;
+            while ((x = re.exec(m))) {
+                out.push({ rwy: x[1], type: x[2] ? "VRB" : "FIXED", dir: x[3] ? +x[3] : undefined, spd: +x[4], gust: x[5] ? +x[5] : undefined, varFrom: x[6] ? +x[6] : undefined, varTo: x[7] ? +x[7] : undefined });
+            }
+            return out;
+        }
+
+        // --- ICONS ---
+		const Icons = {
+			Plane: () => (
+				<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+					<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.7.5-1.1z"/>
+				</svg>
+			),
+
+			Clock: ({ className }) => (
+				<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+					<circle cx="12" cy="12" r="10"/>
+					<polyline points="12 6 12 12 16 14"/>
+				</svg>
+			),
+
+			CloudRain: () => (
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+					<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+					<path d="M16 14v6"/>
+					<path d="M8 14v6"/>
+					<path d="M12 16v6"/>
+				</svg>
+			),
+
+			AlertTriangle: () => (
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+					<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+					<line x1="12" y1="9" x2="12" y2="13"/>
+					<line x1="12" y1="17" x2="12.01" y2="17"/>
+				</svg>
+			),
+
+			CloudFog: () => (
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+					<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+					<path d="M5 22h14"/>
+					<path d="M7 18h10"/>
+				</svg>
+			)
+		};
+
+        // --- COMPONENTS ---
+
+        function polarToCartesian(cx, cy, r, angleDeg) {
+            const rad = (angleDeg - 90) * Math.PI / 180.0;
+            return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+        }
+
+        function describeArc(cx, cy, r, startAngle, endAngle) {
+            const start = polarToCartesian(cx, cy, r, startAngle);
+            const end = polarToCartesian(cx, cy, r, endAngle);
+            let diff = endAngle - startAngle;
+            if (diff < 0) diff += 360;
+            const largeArcFlag = diff <= 180 ? "0" : "1";
+            return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`;
+        }
+
+        const RunwayVisual = ({ runwayHeading, bestRunway, arrowDir, arcStartAngle, arcEndAngle }) => {
+            const cx = 150;
+            const cy = 150;
+            const r = 90;
+            const rwy1 = runwayHeading;
+            const rwy2 = (runwayHeading + 180) % 360;
+            const rwy1Pos = polarToCartesian(cx, cy, 120, runwayHeading - 180);
+            const rwy2Pos = polarToCartesian(cx, cy, 120, runwayHeading);
+
+            return (
+                <svg viewBox="0 0 300 300" className="w-full h-full drop-shadow-sm">
+                    <g transform={`rotate(${runwayHeading - 90} ${cx} ${cy})`}>
+                        <rect x={cx - 90} y={cy - 10} width="180" height="20" rx="3" className="fill-slate-700" />
+                        <line x1={cx - 80} y1={cy} x2={cx + 80} y2={cy} className="stroke-white stroke-[2] [stroke-dasharray:8_8]" />
+                        <g className="fill-white">
+                            <rect x={cx - 88} y={cy - 8} width="4" height="16" />
+                            <rect x={cx - 82} y={cy - 8} width="4" height="16" />
+                            <rect x={cx + 84} y={cy - 8} width="4" height="16" />
+                            <rect x={cx + 78} y={cy - 8} width="4" height="16" />
+                        </g>
+                    </g>
+                    <text x={rwy1Pos.x} y={rwy1Pos.y} className={`text-3xl font-bold text-center dominant-baseline-middle ${bestRunway === rwy1 ? 'fill-emerald-600' : 'fill-slate-900'}`} textAnchor="middle" dominantBaseline="middle">{runwayNumber(rwy1)}</text>
+                    <text x={rwy2Pos.x} y={rwy2Pos.y} className={`text-3xl font-bold text-center dominant-baseline-middle ${bestRunway === rwy2 ? 'fill-emerald-600' : 'fill-slate-900'}`} textAnchor="middle" dominantBaseline="middle">{runwayNumber(rwy2)}</text>
+                    {arrowDir !== null && (
+                        <g>
+                            {arcStartAngle !== null && arcEndAngle !== null && (
+                                <path d={describeArc(cx, cy, r, arcStartAngle, arcEndAngle)} fill="none" className="stroke-blue-500/20" strokeWidth="10" strokeLinecap="round" />
+                            )}
+                            <g transform={`rotate(${((arrowDir + 180) % 360) - 90} ${cx} ${cy})`}>
+                                <line x1={cx - 80} y1={cy} x2={cx + 80} y2={cy} className="stroke-blue-600" strokeWidth="4" strokeLinecap="round" />
+                                <polygon points={`${cx + 85},${cy} ${cx + 70},${cy - 6} ${cx + 70},${cy + 6}`} className="fill-blue-600" />
+                            </g>
+                        </g>
+                    )}
+                </svg>
+            );
+        };
+
+        const AirportCard = ({ airport }) => {
+            const [metar, setMetar] = useState(null);
+            const [error, setError] = useState(false);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                let mounted = true;
+                const fetchMetar = async (retry = true) => {
+                    try {
+                        const res = await fetch(`https://metar.vatsim.net/metar.php?id=${airport.icao}&nocache=${Date.now()}`);
+                        const text = await res.text();
+                        if (!text || text.trim().length < 10) throw new Error("Empty METAR");
+                        if (mounted) {
+                            setMetar(text.trim());
+                            setError(false);
+                            setLoading(false);
+                        }
+                    } catch (err) {
+                        if (retry && mounted) fetchMetar(false);
+                        else if (mounted) {
+                            if (!metar) setError(true);
+                            setLoading(false);
+                        }
+                    }
+                };
+                fetchMetar();
+                const interval = setInterval(() => fetchMetar(), 60000);
+                return () => { mounted = false; clearInterval(interval); };
+            }, [airport.icao]);
+
+            if (loading && !metar) {
+                return <div className="bg-white border border-slate-200 rounded-xl p-5 flex items-center justify-center h-full animate-pulse text-slate-400 font-medium">Loading {airport.code}...</div>;
+            }
+
+            if (error && !metar) {
+                return (
+                    <div className="bg-white border-2 border-red-500 rounded-xl p-5 flex flex-col h-full">
+                        <div className="flex justify-between items-center mb-4"><h2 className="text-lg font-bold tracking-widest text-slate-900">{airport.code}</h2><span className="text-red-500">ERR</span></div>
+                        <div className="flex-1 flex items-center justify-center text-slate-500 font-mono text-xs">Failed to load METAR</div>
+                    </div>
+                );
+            }
+
+            const age = metar ? metarAgeMinutes(metar) : null;
+            const rain = metar ? hasRain(metar) : false;
+            const lowVis = metar ? hasLowVis(metar) : false;
+            const gen = metar ? parseGeneralWind(metar) : null;
+            const rwyWinds = metar ? parseRunwayWinds(metar) : [];
+
+            let arrow = null;
+            let best = null;
+            let warnAny = false;
+            const rows = [];
+
+            if (gen) {
+                let limitStr = "— / —";
+                let warn = false;
+                if (gen.type === "FIXED" && gen.dir !== undefined) {
+                    const chk = gen.gust ?? gen.spd;
+                    const data = windLimits[airport.code]?.[nearest10(gen.dir)];
+                    if (data) {
+                        limitStr = `${data.dry ?? "——"}kt / 💧${data.wet ?? "——"}kt`;
+                        const limitToUse = rain && data.wet !== undefined ? data.wet : data.dry;
+                        if (limitToUse !== undefined && chk > limitToUse) warn = true;
+                    }
+                    arrow = gen;
+                }
+                rows.push({ text: `METAR: ${gen.type === "VRB" ? "VRB" : fmtDir(gen.dir) + "°"}${gen.varFrom ? ` (${fmtDir(gen.varFrom)}–${fmtDir(gen.varTo)})` : ""} / ${gen.spd}${gen.gust ? `G${gen.gust}` : ""}kt`, limit: limitStr, warn });
+                if (warn) warnAny = true;
+            }
+
+            for (const w of rwyWinds) {
+                const chk = w.gust ?? w.spd;
+                const data = w.dir !== undefined ? windLimits[airport.code]?.[nearest10(w.dir)] : null;
+                let limitStr = "— / —";
+                let warn = false;
+                if (data) {
+                    limitStr = `${data.dry ?? "——"}kt / 💧${data.wet ?? "——"}kt`;
+                    const limitToUse = rain && data.wet !== undefined ? data.wet : data.dry;
+                    if (limitToUse !== undefined && chk > limitToUse) warn = true;
+                }
+                rows.push({ text: `RWY${w.rwy}: ${w.type === "VRB" ? "VRB" : fmtDir(w.dir) + "°"}${w.varFrom ? ` (${fmtDir(w.varFrom)}–${fmtDir(w.varTo)})` : ""} / ${w.spd}${w.gust ? `G${w.gust}` : ""}kt`, limit: limitStr, warn });
+                if (w.type === "FIXED" && (!arrow || chk > (arrow.gust ?? arrow.spd))) arrow = w;
+                if (warn) warnAny = true;
+            }
+
+            if (arrow && arrow.dir !== undefined) {
+                const h1 = airport.rwy;
+                const h2 = (airport.rwy + 180) % 360;
+                const spd = arrow.gust ?? arrow.spd;
+                const headwind1 = spd * Math.cos(angleDiff(arrow.dir, h1) * Math.PI / 180);
+                const headwind2 = spd * Math.cos(angleDiff(arrow.dir, h2) * Math.PI / 180);
+                best = headwind1 >= headwind2 ? h1 : h2;
+            }
+
+            let arcFrom = null, arcTo = null;
+            if (gen?.varFrom && gen?.varTo) { arcFrom = gen.varFrom; arcTo = gen.varTo; }
+            else {
+                const bestRwyNumber = best ? runwayNumber(best) : null;
+                const rwyInUse = rwyWinds.find(r => bestRwyNumber && r.rwy === bestRwyNumber && r.varFrom && r.varTo);
+                if (rwyInUse) { arcFrom = rwyInUse.varFrom; arcTo = rwyInUse.varTo; }
+            }
+
+            const isStale = age !== null && age > 120;
+
+            return (
+                <div className={`relative bg-white border-4 rounded-xl p-2.5 flex flex-col h-full overflow-hidden transition-shadow duration-200 ${warnAny ? 'border-red-500 shadow-sm shadow-red-500/10' : 'border-slate-200 shadow-sm hover:shadow-md'}`}>
+                    {isStale && <div className="absolute inset-0 pointer-events-none opacity-5" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #000 0px, #000 2px, transparent 2px, transparent 8px)'}} />}
+                    <div className="flex justify-between items-center mb-1.5 z-10">
+                        <div className="flex items-baseline gap-2">
+                            <h2 className="text-lg font-bold tracking-widest text-slate-900">{airport.code}</h2>
+                            <div className="flex items-center gap-1 text-[10px] text-slate-500 font-medium">
+                                <Icons.Clock className={isStale ? "text-amber-500" : ""} />
+                                <span className={isStale ? "text-amber-600 font-semibold" : ""}>{age ?? "--"}m</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            {lowVis && <div className="text-slate-400" title="Low visibility/Fog"><Icons.CloudFog /></div>}
+                            {rain && <div className="text-blue-600" title="Rain reported"><Icons.CloudRain /></div>}
+                        </div>
+                    </div>
+                    <div className="flex-1 grid grid-cols-[1fr_auto] gap-2 items-center z-10 min-h-0">
+                        <div className="flex flex-col gap-1 overflow-hidden pr-1">
+                            {rows.map((r, i) => (
+                                <div key={i} className={`flex justify-between items-center gap-1.5 text-[10px] font-mono pb-0.5 border-b border-slate-50 last:border-0 last:pb-0 ${r.warn ? 'text-red-600 font-semibold' : 'text-slate-700'}`}>
+                                    <span className="truncate">{r.text}</span>
+                                    <span className="text-right whitespace-nowrap opacity-70">{r.limit}</span>
+                                </div>
+                            ))}
+                            {rows.length === 0 && <div className="text-[10px] text-slate-400 italic">No wind data</div>}
+                        </div>
+                        <div className="w-36 h-36 flex-shrink-0">
+                            <RunwayVisual runwayHeading={airport.rwy} bestRunway={best} arrowDir={arrow?.dir ?? null} arcStartAngle={arcFrom} arcEndAngle={arcTo} />
+                        </div>
+                    </div>
+                    <div className="mt-1.5 pt-1.5 border-t border-slate-50 z-10">
+                        <p className="font-mono text-[9px] text-slate-400 leading-tight line-clamp-2 break-words">{metar}</p>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            return (
+                <div className="h-screen bg-slate-50 text-slate-900 font-sans flex flex-col overflow-hidden">
+                    <header className="bg-white border-b border-slate-200 z-50 shadow-sm flex-shrink-0">
+                        <div className="w-full px-4 h-14 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-blue-600 p-1.5 rounded-lg text-white"><Icons.Plane /></div>
+                                <div className="flex items-start gap-1">
+                                    <h1 className="text-lg font-bold tracking-tight text-slate-900">AEROPORTOS <span className="text-blue-600">RAA</span></h1>
+                                    <span className="text-[8px] text-slate-400 font-medium mt-0.5">© Pedro Vicente</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-6 text-xs font-medium text-slate-500">
+                                <div className="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="blue" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/></svg><span>Chuva</span></div>
+                                <div className="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="grey" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M5 22h14"/><path d="M7 18h10"/></svg><span>Visibilidade reduzida</span></div>
+                            </div>
+                        </div>
+                    </header>
+                    <main className="flex-1 w-full p-2 overflow-hidden">
+                        <div className="grid grid-cols-3 grid-rows-3 gap-2 h-full">
+                            {airports.map((airport) => <AirportCard key={airport.code} airport={airport} />)}
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
