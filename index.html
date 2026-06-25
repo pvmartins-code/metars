@@ -67,6 +67,7 @@
 
 	<script type="text/babel">
         const { useState, useEffect, useMemo } = React;
+		
 
         // --- DATA ---
         const airports = [
@@ -267,8 +268,11 @@
                     }
                 };
                 fetchMetar();
-                const interval = setInterval(() => fetchMetar(), 60000);
+                const interval = setInterval(async () => {
+				await fetchMetar(false); }, 60000);
                 return () => { mounted = false; clearInterval(interval); };
+				
+				
             }, [airport.icao]);
 
             if (loading && !metar) {
