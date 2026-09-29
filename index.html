@@ -251,7 +251,7 @@
                 let mounted = true;
                 const fetchMetar = async (retry = true) => {
                     try {
-                        const res = await fetch(`https://metar.vatsim.net/metar.php?id=${airport.icao}&nocache=${Date.now()}`);
+                        const res = await fetch(`https://aviationweather.gov/api/data/metar?ids=${airport.icao}`);
                         const text = await res.text();
                         if (!text || text.trim().length < 10) throw new Error("Empty METAR");
                         if (mounted) {
