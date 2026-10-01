@@ -3,52 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AEROPORTOS RAA</title>
-    <!-- Tailwind CDN -->
+    <title>Aeroportos RAA - Azores Wind & Visibility Alert System</title>
+    <meta name="description" content="RAA - Azores Wind & Visibility Alert System">
+    <meta property="og:title" content="Aeroportos RAA - Azores Wind & Visibility Alert System">
+    <meta property="og:description" content="RAA - Azores Wind & Visibility Alert System">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter & JetBrains Mono -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <!-- React & ReactDOM -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- React 18 & ReactDOM -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel for JSX -->
-	<script src="https://unpkg.com/@babel/standalone@7.22.20/babel.min.js"></script>
+    <!-- Babel Standalone for JSX -->
+    <script src="https://unpkg.com/@babel/standalone@7.22.20/babel.min.js"></script>
     <style>
-		@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif; 
+            margin: 0;
+            padding: 0;
+            background-color: #f8fafc;
+            color: #0f172a;
+            overflow: hidden;
+            height: 100vh;
+        }
 
+        .font-mono { 
+            font-family: 'JetBrains Mono', monospace; 
+        }
 
-		body { 
-			font-family: 'Inter', sans-serif; 
-			margin: 0;
-			padding: 0;
-			background-color: #f8fafc; /* bg-slate-50 */
-			color: #0f172a; /* text-slate-900 */
-			overflow: hidden;
-			height: 100vh;
-		}
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
 
-		.font-mono { 
-			font-family: 'JetBrains Mono', monospace; 
-		}
+        .animate-pulse { 
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; 
+        }
 
-		@keyframes pulse {
-			0%, 100% { opacity: 1; }
-			50% { opacity: .5; }
-		}
-
-		.animate-pulse { 
-			animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; 
-		}
-
-		/* Custom scrollbar for METAR text if needed */
-		.metar-text {
-			scrollbar-width: none;
-			-ms-overflow-style: none;
-		}
-		.metar-text::-webkit-scrollbar {
-			display: none;
-		}
-	</style>
+        .custom-scroll::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.03);
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.3);
+            border-radius: 4px;
+        }
+    </style>
     <script>
         tailwind.config = {
             theme: {
@@ -65,23 +70,23 @@
 <body class="bg-slate-50 text-slate-900 overflow-hidden">
     <div id="root"></div>
 
-	<script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
-		
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useCallback } = React;
 
-        // --- DATA ---
+        // --- AIRPORTS CONFIGURATION (9 ISLANDS OF THE AZORES) ---
         const airports = [
-            {code:"PDL",icao:"LPPD",rwy:120},
-            {code:"SMA",icao:"LPAZ",rwy:180},
-            {code:"TER",icao:"LPLA",rwy:150},
-            {code:"GRW",icao:"LPGR",rwy:90},
-            {code:"SJZ",icao:"LPSJ",rwy:130},
-            {code:"PIX",icao:"LPPI",rwy:90},
-            {code:"HOR",icao:"LPHR",rwy:100},
-            {code:"FLW",icao:"LPFL",rwy:180},
-            {code:"CVU",icao:"LPCR",rwy:110}
+            { code: "PDL", name: "Ponta Delgada", island: "São Miguel", icao: "LPPD", rwy: 120 },
+            { code: "SMA", name: "Santa Maria", island: "Santa Maria", icao: "LPAZ", rwy: 180 },
+            { code: "TER", name: "Terceira", island: "Terceira", icao: "LPLA", rwy: 150 },
+            { code: "GRW", name: "Graciosa", island: "Graciosa", icao: "LPGR", rwy: 90 },
+            { code: "SJZ", name: "São Jorge", island: "São Jorge", icao: "LPSJ", rwy: 130 },
+            { code: "PIX", name: "Pico", island: "Pico", icao: "LPPI", rwy: 90 },
+            { code: "HOR", name: "Horta", island: "Faial", icao: "LPHR", rwy: 100 },
+            { code: "FLW", name: "Flores", island: "Flores", icao: "LPFL", rwy: 180 },
+            { code: "CVU", name: "Corvo", island: "Corvo", icao: "LPCR", rwy: 110 }
         ];
 
+        // --- WIND LIMITS TABLE (KNOTS) ---
         const windLimits = {
             PDL:{10:{dry:30},20:{dry:30},30:{dry:30},40:{dry:30},50:{dry:34},60:{dry:34},70:{dry:40},80:{dry:40},90:{dry:40},100:{dry:40},110:{dry:40},120:{dry:40},130:{dry:40},140:{dry:40},150:{dry:40},160:{dry:40},170:{dry:34},180:{dry:34},190:{dry:30},200:{dry:30},210:{dry:30},220:{dry:30},230:{dry:34},240:{dry:34},250:{dry:40},260:{dry:40},270:{dry:40},280:{dry:40},290:{dry:40},300:{dry:40},310:{dry:40},320:{dry:40},330:{dry:40},340:{dry:40},350:{dry:35},360:{dry:35}},
             SMA:{10:{dry:40},20:{dry:40},30:{dry:40},40:{dry:40},50:{dry:37},60:{dry:34},70:{dry:34},80:{dry:32},90:{dry:32},100:{dry:34},110:{dry:35},120:{dry:37},130:{dry:40},140:{dry:40},150:{dry:40},160:{dry:40},170:{dry:40},180:{dry:40},190:{dry:40},200:{dry:40},210:{dry:40},220:{dry:40},230:{dry:37},240:{dry:34},250:{dry:34},260:{dry:32},270:{dry:32},280:{dry:34},290:{dry:35},300:{dry:37},310:{dry:40},320:{dry:40},330:{dry:40},340:{dry:40},350:{dry:40},360:{dry:40}},
@@ -94,10 +99,55 @@
             CVU:{10:{dry:10},20:{dry:10},30:{dry:10},40:{dry:10},50:{dry:10},60:{dry:10},70:{dry:10},80:{dry:35},90:{dry:35},100:{dry:35},110:{dry:35},120:{dry:35},130:{dry:35},140:{dry:35},150:{dry:25},160:{dry:25},170:{dry:25},180:{dry:25},190:{dry:25},200:{dry:25},210:{dry:25},220:{dry:25},230:{dry:25},240:{dry:25},250:{dry:25},260:{dry:25},270:{dry:25},280:{dry:35},290:{dry:35},300:{dry:35},310:{dry:35},320:{dry:35},330:{dry:10},340:{dry:10},350:{dry:10},360:{dry:10}}
         };
 
-        // --- UTILS ---
+        // --- APPROACH MINIMA LIMITS (TABLE FROM ATTACHED IMAGE) ---
+        // AD: Aerodrome code
+        // RWY: Runway number
+        // APCH: Approach type
+        // minVis: Visibility / RVR in meters
+        // minCeiling: Ceiling ( BKN / OVC / VV) in feet
+        const approachLimitsTable = {
+            PDL: [
+                { rwy: "12", apch: "RNP", minVis: 3600, minCeiling: 700 },
+                { rwy: "30", apch: "ILS", minVis: 1000, minCeiling: 300 }
+            ],
+            SMA: [
+                { rwy: "18", apch: "ILS", minVis: 800, minCeiling: 200 },
+                { rwy: "36", apch: "RNP", minVis: 1100, minCeiling: 400 }
+            ],
+            TER: [
+                { rwy: "15", apch: "ILS", minVis: 1600, minCeiling: 300 },
+                { rwy: "33", apch: "ILS", minVis: 1600, minCeiling: 400 }
+            ],
+            GRW: [
+                { rwy: "09", apch: "RNP", minVis: 1500, minCeiling: 600, note: "*" },
+                { rwy: "27", apch: "RNP", minVis: 1500, minCeiling: 600, note: "*" }
+            ],
+            SJZ: [
+                { rwy: "13", displayRwy: "13", apch: "Visual", minVis: 5000, minCeiling: 1000, note: "***" },
+                { rwy: "31", displayRwy: "31", apch: "Visual", minVis: 5000, minCeiling: 1000, note: "***" }
+            ],
+            PIX: [
+                { rwy: "09", apch: "Circling RWY27", minVis: 1900, minCeiling: 1100 },
+                { rwy: "27", apch: "ILS", minVis: 1400, minCeiling: 500 }
+            ],
+            HOR: [
+                { rwy: "10", apch: "Circling", minVis: 2400, minCeiling: 1000 },
+                { rwy: "28", apch: "Locator A", minVis: 2400, minCeiling: 800 }
+            ],
+            FLW: [
+                { rwy: "18", apch: "Circling RWY36", minVis: 6000, minCeiling: 1100 },
+                { rwy: "36", apch: "Locator SC", minVis: 6000, minCeiling: 1100 }
+            ],
+            CVU: [
+                { rwy: "11", apch: "Circling RWY29", minVis: 5000, minCeiling: 1000 },
+                { rwy: "29", apch: "RNP LNAV", minVis: 5000, minCeiling: 1000 }
+            ]
+        };
+
+        // --- UTILITY FUNCTIONS ---
         const fmtDir = (d) => String(d).padStart(3, "0");
         const runwayNumber = (h) => ((Math.round(h / 10) % 36) || 36).toString().padStart(2, "0");
-        const angleDiff = (a, b) => { let d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; }
+        const angleDiff = (a, b) => { let d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
         const nearest10 = (d) => Math.min(360, Math.max(10, Math.round(d / 10) * 10));
 
         function metarAgeMinutes(m) {
@@ -114,19 +164,8 @@
             return /\b(-|\+)?(RA|DZ|DZRA)\b|\b(SHRA|VCSH)\b/.test(metar);
         }
 
-        function hasLowVis(metar) {
-            // Fog (FG), Mist (BR), Haze (HZ), Vertical Visibility (VV)
-            if (/\b(FG|BR|HZ|VV\d{3})\b/.test(metar)) return true;
-            // BKN or OVC below 1000ft (e.g., BKN008, OVC005)
-            if (/\b(BKN|OVC)00\d\b/.test(metar)) return true;
-            // Visibility in meters (4 digits)
-            const visMatch = metar.match(/\b(\d{4})\b/);
-            if (visMatch) {
-                const vis = parseInt(visMatch[1], 10);
-                // If visibility is less than 5000m, it's worth a symbol
-                if (vis < 5000) return true;
-            }
-            return false;
+        function hasLowVisPhenomenon(metar) {
+            return /\b(FG|BR|HZ|MIFG|PRFG|FZFG)\b/.test(metar);
         }
 
         function parseGeneralWind(m) {
@@ -147,49 +186,204 @@
             return out;
         }
 
-        // --- ICONS ---
-		const Icons = {
-			Plane: () => (
-				<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-					<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.7.5-1.1z"/>
-				</svg>
-			),
+        // --- COMPREHENSIVE VISIBILITY & CEILING / VERTICAL VISIBILITY PARSER ---
+        function parseVisAndCeiling(metar) {
+            let vis = null;
+            let isCavok = false;
+            let rawVisText = "--";
+            let ceiling = null; // Lowest BKN/OVC or VV height in feet (null = unlimited/clear)
+            let rawCeilingText = "CÉU LIMPO";
+            let ceilingLayer = null;
+            let rvrMap = {}; // runway string -> rvr meters
 
-			Clock: ({ className }) => (
-				<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-					<circle cx="12" cy="12" r="10"/>
-					<polyline points="12 6 12 12 16 14"/>
-				</svg>
-			),
+            if (!metar) return { vis, isCavok, rawVisText, ceiling, rawCeilingText, ceilingLayer, rvrMap };
 
-			CloudRain: () => (
-				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-					<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
-					<path d="M16 14v6"/>
-					<path d="M8 14v6"/>
-					<path d="M12 16v6"/>
-				</svg>
-			),
+            // 1. Check CAVOK (Ceiling And Visibility OK)
+            // Visibility >= 10,000 m, no cloud below 5,000 ft, no CB/TCU
+            if (/\bCAVOK\b/.test(metar)) {
+                isCavok = true;
+                vis = 9999;
+                rawVisText = "CAVOK (≥10km)";
+                ceiling = null;
+                rawCeilingText = "CAVOK (S/Teto <5000')";
+                return { vis, isCavok, rawVisText, ceiling, rawCeilingText, ceilingLayer: null, rvrMap };
+            }
 
-			AlertTriangle: () => (
-				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-					<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
-					<line x1="12" y1="9" x2="12" y2="13"/>
-					<line x1="12" y1="17" x2="12.01" y2="17"/>
-				</svg>
-			),
+            // 2. Parse Runway Visual Range (RVR)
+            // e.g. R30/0550, R12/1200N, R15/M0300, R33/P1500, R27/0500V1000
+            const rvrRegex = /\bR(\d{2}[LCR]?)\/([MP])?(\d{4})(?:V([MP])?(\d{4}))?[NUD]?\b/g;
+            let rvrMatch;
+            while ((rvrMatch = rvrRegex.exec(metar)) !== null) {
+                const rwyNum = rvrMatch[1].replace(/[LCR]/, '');
+                const rvrVal = parseInt(rvrMatch[3], 10);
+                rvrMap[rwyNum] = rvrVal;
+            }
 
-			CloudFog: () => (
-				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-					<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
-					<path d="M5 22h14"/>
-					<path d="M7 18h10"/>
-				</svg>
-			)
-		};
+            // 3. Parse Prevailing Visibility
+            // Tokens after wind: e.g. "9999", "3500", "0800", "0550NDV", "1400SW", "10SM", "1 1/2SM"
+            const tokens = metar.split(/\s+/);
+            for (let i = 0; i < tokens.length; i++) {
+                const token = tokens[i];
 
-        // --- COMPONENTS ---
+                // Check standard ICAO 4-digit meter format: e.g. 9999, 3500, 0800, 1000, 0550
+                const visMeterMatch = token.match(/^(\d{4})(?:NDV|[NSEW]{1,2})?$/);
+                if (visMeterMatch) {
+                    const parsedMeters = parseInt(visMeterMatch[1], 10);
+                    // Filter out pressure QNH or date/time
+                    if (!token.endsWith("Z") && !token.startsWith("Q") && !token.startsWith("RWY")) {
+                        vis = parsedMeters;
+                        rawVisText = parsedMeters >= 9999 ? "≥10km" : `${parsedMeters}m`;
+                        break;
+                    }
+                }
 
+                // Check Statute Miles format (rare, but used at Lajes USAF station)
+                const smFractionMatch = token.match(/^(\d+)\/(\d+)SM$/);
+                if (smFractionMatch) {
+                    const frac = parseInt(smFractionMatch[1], 10) / parseInt(smFractionMatch[2], 10);
+                    const meters = Math.round(frac * 1609);
+                    vis = meters;
+                    rawVisText = `${token} (~${meters}m)`;
+                    break;
+                }
+                const smWholeMatch = token.match(/^(\d+)SM$/);
+                if (smWholeMatch) {
+                    const miles = parseInt(smWholeMatch[1], 10);
+                    const meters = Math.round(miles * 1609);
+                    vis = meters;
+                    rawVisText = `${token} (~${meters}m)`;
+                    break;
+                }
+            }
+
+            // 4. Parse Ceiling (Lowest BKN, OVC, or VV)
+            // Vertical Visibility: e.g. VV002 (200ft), VV001 (100ft), VV/// (obscured = 0ft)
+            const vvMatch = metar.match(/\bVV(\d{3}|\/\/\/)\b/);
+            if (vvMatch) {
+                if (vvMatch[1] === "///") {
+                    ceiling = 0;
+                    ceilingLayer = "VV///";
+                    rawCeilingText = "VV/// (0 ft - Obscurecido)";
+                } else {
+                    const vvFt = parseInt(vvMatch[1], 10) * 100;
+                    ceiling = vvFt;
+                    ceilingLayer = `VV${vvMatch[1]}`;
+                    rawCeilingText = `VV ${vvFt} ft`;
+                }
+            }
+
+            // Cloud layers: BKNxxx or OVCxxx
+            const cloudRegex = /\b(BKN|OVC)(\d{3})(?:CB|TCU)?\b/g;
+            let cMatch;
+            while ((cMatch = cloudRegex.exec(metar)) !== null) {
+                const type = cMatch[1];
+                const heightFt = parseInt(cMatch[2], 10) * 100;
+                if (ceiling === null || heightFt < ceiling) {
+                    ceiling = heightFt;
+                    ceilingLayer = `${type}${cMatch[2]}`;
+                    rawCeilingText = `${type} ${heightFt} ft`;
+                }
+            }
+
+            // Descriptive text if no ceiling layer exists
+            if (ceiling === null) {
+                if (/\b(SKC|NSC|NCD)\b/.test(metar)) {
+                    rawCeilingText = "S/ TETO (NSC/SKC)";
+                } else if (/\b(FEW|SCT)\d{3}\b/.test(metar)) {
+                    const lowestFewSct = metar.match(/\b(FEW|SCT)(\d{3})\b/);
+                    rawCeilingText = lowestFewSct ? `S/ TETO (${lowestFewSct[1]}${lowestFewSct[2]})` : "S/ TETO";
+                }
+            }
+
+            return {
+                vis,
+                isCavok,
+                rawVisText,
+                ceiling,
+                rawCeilingText,
+                ceilingLayer,
+                rvrMap
+            };
+        }
+
+        // --- SVG ICONS ---
+        const Icons = {
+            Plane: () => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.7.5-1.1z"/>
+                </svg>
+            ),
+            Clock: ({ className }) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+            ),
+            CloudRain: () => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+                    <path d="M16 14v6"/>
+                    <path d="M8 14v6"/>
+                    <path d="M12 16v6"/>
+                </svg>
+            ),
+            CloudFog: () => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+                    <path d="M5 22h14"/>
+                    <path d="M7 18h10"/>
+                </svg>
+            ),
+            Eye: () => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+            ),
+            Cloud: () => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+                </svg>
+            ),
+            Wind: () => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/>
+                    <path d="M9.6 4.6A2 2 0 1 1 11 8H2"/>
+                    <path d="M12.6 19.4A2 2 0 1 0 14 16H2"/>
+                </svg>
+            ),
+            AlertTriangle: ({ className = "w-3.5 h-3.5" }) => (
+                <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+            ),
+            Table: () => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 3v18"/>
+                    <rect width="18" height="18" x="3" y="3" rx="2"/>
+                    <path d="M3 9h18"/>
+                    <path d="M3 15h18"/>
+                </svg>
+            ),
+            Refresh: () => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                    <path d="M21 3v5h-5"/>
+                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                    <path d="M8 16H3v5"/>
+                </svg>
+            ),
+            Close: () => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 6 6 18"/>
+                    <path d="m6 6 12 12"/>
+                </svg>
+            )
+        };
+
+        // --- POLAR CALCULATIONS & RUNWAY VISUAL SVG ---
         function polarToCartesian(cx, cy, r, angleDeg) {
             const rad = (angleDeg - 90) * Math.PI / 180.0;
             return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
@@ -204,17 +398,20 @@
             return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`;
         }
 
-        const RunwayVisual = ({ runwayHeading, bestRunway, arrowDir, arcStartAngle, arcEndAngle }) => {
+        const RunwayVisual = ({ runwayHeading, bestRunway, selectedRunwayHdg, arrowDir, arcStartAngle, arcEndAngle }) => {
             const cx = 150;
             const cy = 150;
             const r = 90;
             const rwy1 = runwayHeading;
             const rwy2 = (runwayHeading + 180) % 360;
-            const rwy1Pos = polarToCartesian(cx, cy, 120, runwayHeading - 180);
-            const rwy2Pos = polarToCartesian(cx, cy, 120, runwayHeading);
+            const rwy1Pos = polarToCartesian(cx, cy, 122, runwayHeading - 180);
+            const rwy2Pos = polarToCartesian(cx, cy, 122, runwayHeading);
+
+            const isRwy1Active = selectedRunwayHdg !== null ? selectedRunwayHdg === rwy1 : bestRunway === rwy1;
+            const isRwy2Active = selectedRunwayHdg !== null ? selectedRunwayHdg === rwy2 : bestRunway === rwy2;
 
             return (
-                <svg viewBox="0 0 300 300" className="w-full h-full drop-shadow-sm">
+                <svg viewBox="0 0 300 300" className="w-full h-full drop-shadow-sm select-none">
                     <g transform={`rotate(${runwayHeading - 90} ${cx} ${cy})`}>
                         <rect x={cx - 90} y={cy - 10} width="180" height="20" rx="3" className="fill-slate-700" />
                         <line x1={cx - 80} y1={cy} x2={cx + 80} y2={cy} className="stroke-white stroke-[2] [stroke-dasharray:8_8]" />
@@ -225,12 +422,28 @@
                             <rect x={cx + 78} y={cy - 8} width="4" height="16" />
                         </g>
                     </g>
-                    <text x={rwy1Pos.x} y={rwy1Pos.y} className={`text-3xl font-bold text-center dominant-baseline-middle ${bestRunway === rwy1 ? 'fill-emerald-600' : 'fill-slate-900'}`} textAnchor="middle" dominantBaseline="middle">{runwayNumber(rwy1)}</text>
-                    <text x={rwy2Pos.x} y={rwy2Pos.y} className={`text-3xl font-bold text-center dominant-baseline-middle ${bestRunway === rwy2 ? 'fill-emerald-600' : 'fill-slate-900'}`} textAnchor="middle" dominantBaseline="middle">{runwayNumber(rwy2)}</text>
+                    <text 
+                        x={rwy1Pos.x} 
+                        y={rwy1Pos.y} 
+                        className={`text-3xl font-extrabold text-center dominant-baseline-middle transition-colors ${isRwy1Active ? 'fill-emerald-600 font-black' : 'fill-slate-400'}`} 
+                        textAnchor="middle" 
+                        dominantBaseline="middle"
+                    >
+                        {runwayNumber(rwy1)}
+                    </text>
+                    <text 
+                        x={rwy2Pos.x} 
+                        y={rwy2Pos.y} 
+                        className={`text-3xl font-extrabold text-center dominant-baseline-middle transition-colors ${isRwy2Active ? 'fill-emerald-600 font-black' : 'fill-slate-400'}`} 
+                        textAnchor="middle" 
+                        dominantBaseline="middle"
+                    >
+                        {runwayNumber(rwy2)}
+                    </text>
                     {arrowDir !== null && (
                         <g>
                             {arcStartAngle !== null && arcEndAngle !== null && (
-                                <path d={describeArc(cx, cy, r, arcStartAngle, arcEndAngle)} fill="none" className="stroke-blue-500/20" strokeWidth="10" strokeLinecap="round" />
+                                <path d={describeArc(cx, cy, r, arcStartAngle, arcEndAngle)} fill="none" className="stroke-blue-500/25" strokeWidth="10" strokeLinecap="round" />
                             )}
                             <g transform={`rotate(${((arrowDir + 180) % 360) - 90} ${cx} ${cy})`}>
                                 <line x1={cx - 80} y1={cy} x2={cx + 80} y2={cy} className="stroke-blue-600" strokeWidth="4" strokeLinecap="round" />
@@ -242,62 +455,76 @@
             );
         };
 
-        const AirportCard = ({ airport }) => {
+        // --- AIRPORT CARD ---
+        const AirportCard = ({ airport, alertWindEnabled, alertVisCeilingEnabled, refreshKey }) => {
             const [metar, setMetar] = useState(null);
             const [error, setError] = useState(false);
             const [loading, setLoading] = useState(true);
+            const [manualRwy, setManualRwy] = useState(null);
+
+            const fetchMetar = useCallback(async (retry = true) => {
+                try {
+                    const res = await fetch(`https://metar.vatsim.net/${airport.icao}?t=${Date.now()}`);
+                    const text = await res.text();
+                    if (!text || text.trim().length < 10) throw new Error("Empty METAR");
+                    setMetar(text.trim());
+                    setError(false);
+                    setLoading(false);
+                } catch (err) {
+                    if (retry) {
+                        setTimeout(() => fetchMetar(false), 1500);
+                    } else {
+                        if (!metar) setError(true);
+                        setLoading(false);
+                    }
+                }
+            }, [airport.icao, metar]);
 
             useEffect(() => {
-                let mounted = true;
-                const fetchMetar = async (retry = true) => {
-                    try {
-                        const res = await fetch(`https://metar.vatsim.net/${airport.icao}`);
-                        const text = await res.text();
-						if (!text || text.trim().length < 10) throw new Error("Empty METAR");
-                        if (mounted) {
-                            setMetar(text.trim());
-                            setError(false);
-                            setLoading(false);
-                        }
-                    } catch (err) {
-                        if (retry && mounted) fetchMetar(false);
-                        else if (mounted) {
-                            if (!metar) setError(true);
-                            setLoading(false);
-                        }
-                    }
-                };
                 fetchMetar();
-                const interval = setInterval(async () => {
-				await fetchMetar(false); }, 60000);
-                return () => { mounted = false; clearInterval(interval); };
-				
-				
-            }, [airport.icao]);
+                const interval = setInterval(() => {
+                    fetchMetar(false); 
+                }, 60000);
+                return () => clearInterval(interval);
+            }, [fetchMetar, refreshKey]);
 
             if (loading && !metar) {
-                return <div className="bg-white border border-slate-200 rounded-xl p-5 flex items-center justify-center h-full animate-pulse text-slate-400 font-medium">Loading {airport.code}...</div>;
+                return (
+                    <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center h-full animate-pulse text-slate-400 font-medium">
+                        <div className="w-6 h-6 rounded-full border-2 border-blue-500 border-t-transparent animate-spin mb-1.5" />
+                        <span className="text-xs">Carregando {airport.code}...</span>
+                    </div>
+                );
             }
 
             if (error && !metar) {
                 return (
-                    <div className="bg-white border-2 border-red-500 rounded-xl p-5 flex flex-col h-full">
-                        <div className="flex justify-between items-center mb-4"><h2 className="text-lg font-bold tracking-widest text-slate-900">{airport.code}</h2><span className="text-red-500">ERR</span></div>
-                        <div className="flex-1 flex items-center justify-center text-slate-500 font-mono text-xs">Failed to load METAR</div>
+                    <div className="bg-white border-2 border-red-500 rounded-xl p-3 flex flex-col h-full justify-between">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <h2 className="text-base font-bold tracking-widest text-slate-900">{airport.code}</h2>
+                                <span className="text-[10px] text-slate-400">{airport.name}</span>
+                            </div>
+                            <span className="text-xs font-bold px-2 py-0.5 bg-red-100 text-red-600 rounded">ERRO METAR</span>
+                        </div>
+                        <div className="flex-1 flex items-center justify-center text-slate-500 font-mono text-xs">
+                            Falha ao carregar METAR
+                        </div>
                     </div>
                 );
             }
 
             const age = metar ? metarAgeMinutes(metar) : null;
             const rain = metar ? hasRain(metar) : false;
-            const lowVis = metar ? hasLowVis(metar) : false;
+            const lowVisPhenom = metar ? hasLowVisPhenomenon(metar) : false;
             const gen = metar ? parseGeneralWind(metar) : null;
             const rwyWinds = metar ? parseRunwayWinds(metar) : [];
 
+            // Wind calculation & runway identification
             let arrow = null;
-            let best = null;
-            let warnAny = false;
-            const rows = [];
+            let bestHdg = null;
+            let windWarnAny = false;
+            const windRows = [];
 
             if (gen) {
                 let limitStr = "— / —";
@@ -312,8 +539,12 @@
                     }
                     arrow = gen;
                 }
-                rows.push({ text: `METAR: ${gen.type === "VRB" ? "VRB" : fmtDir(gen.dir) + "°"}${gen.varFrom ? ` (${fmtDir(gen.varFrom)}–${fmtDir(gen.varTo)})` : ""} / ${gen.spd}${gen.gust ? `G${gen.gust}` : ""}kt`, limit: limitStr, warn });
-                if (warn) warnAny = true;
+                windRows.push({ 
+                    text: `METAR: ${gen.type === "VRB" ? "VRB" : fmtDir(gen.dir) + "°"}${gen.varFrom ? ` (${fmtDir(gen.varFrom)}–${fmtDir(gen.varTo)})` : ""} / ${gen.spd}${gen.gust ? `G${gen.gust}` : ""}kt`, 
+                    limit: limitStr, 
+                    warn 
+                });
+                if (warn) windWarnAny = true;
             }
 
             for (const w of rwyWinds) {
@@ -326,90 +557,444 @@
                     const limitToUse = rain && data.wet !== undefined ? data.wet : data.dry;
                     if (limitToUse !== undefined && chk > limitToUse) warn = true;
                 }
-                rows.push({ text: `RWY${w.rwy}: ${w.type === "VRB" ? "VRB" : fmtDir(w.dir) + "°"}${w.varFrom ? ` (${fmtDir(w.varFrom)}–${fmtDir(w.varTo)})` : ""} / ${w.spd}${w.gust ? `G${w.gust}` : ""}kt`, limit: limitStr, warn });
+                windRows.push({ 
+                    text: `RWY${w.rwy}: ${w.type === "VRB" ? "VRB" : fmtDir(w.dir) + "°"}${w.varFrom ? ` (${fmtDir(w.varFrom)}–${fmtDir(w.varTo)})` : ""} / ${w.spd}${w.gust ? `G${w.gust}` : ""}kt`, 
+                    limit: limitStr, 
+                    warn 
+                });
                 if (w.type === "FIXED" && (!arrow || chk > (arrow.gust ?? arrow.spd))) arrow = w;
-                if (warn) warnAny = true;
+                if (warn) windWarnAny = true;
             }
 
+            // Determine best runway by headwind component
+            const h1 = airport.rwy;
+            const h2 = (airport.rwy + 180) % 360;
             if (arrow && arrow.dir !== undefined) {
-                const h1 = airport.rwy;
-                const h2 = (airport.rwy + 180) % 360;
                 const spd = arrow.gust ?? arrow.spd;
                 const headwind1 = spd * Math.cos(angleDiff(arrow.dir, h1) * Math.PI / 180);
                 const headwind2 = spd * Math.cos(angleDiff(arrow.dir, h2) * Math.PI / 180);
-                best = headwind1 >= headwind2 ? h1 : h2;
+                bestHdg = headwind1 >= headwind2 ? h1 : h2;
+            } else {
+                bestHdg = h1;
             }
 
+            // Wind variation arc
             let arcFrom = null, arcTo = null;
-            if (gen?.varFrom && gen?.varTo) { arcFrom = gen.varFrom; arcTo = gen.varTo; }
-            else {
-                const bestRwyNumber = best ? runwayNumber(best) : null;
+            if (gen?.varFrom && gen?.varTo) { 
+                arcFrom = gen.varFrom; 
+                arcTo = gen.varTo; 
+            } else {
+                const bestRwyNumber = bestHdg ? runwayNumber(bestHdg) : null;
                 const rwyInUse = rwyWinds.find(r => bestRwyNumber && r.rwy === bestRwyNumber && r.varFrom && r.varTo);
                 if (rwyInUse) { arcFrom = rwyInUse.varFrom; arcTo = rwyInUse.varTo; }
             }
 
+            // --- VISIBILITY & CEILING EVALUATION ---
+            const { vis, isCavok, rawVisText, ceiling, rawCeilingText, ceilingLayer, rvrMap } = parseVisAndCeiling(metar);
+            const approaches = approachLimitsTable[airport.code] || [];
+            
+            const naturalBestRwyNum = runwayNumber(bestHdg);
+            const activeRwyNum = manualRwy || naturalBestRwyNum;
+
+            let currentApproach = approaches.find(a => 
+                a.rwy === activeRwyNum || 
+                (airport.code === "SJZ" && ((activeRwyNum === "13" && a.rwy === "13") || (activeRwyNum === "31" && a.rwy === "31")))
+            );
+            if (!currentApproach && approaches.length > 0) {
+                currentApproach = approaches[0];
+            }
+
+            // If active runway has a reported RVR, use RVR; otherwise use prevailing visibility
+            const runwayRvr = rvrMap[activeRwyNum] !== undefined ? rvrMap[activeRwyNum] : null;
+            const effectiveVis = runwayRvr !== null ? runwayRvr : vis;
+
+            // Check if limits exceeded
+            const isVisOutOfLimits = currentApproach && effectiveVis !== null && effectiveVis < currentApproach.minVis;
+            const isCeilingOutOfLimits = currentApproach && ceiling !== null && ceiling < currentApproach.minCeiling;
+
+            // Active alerts based on user toggles
+            const windAlertActive = alertWindEnabled && windWarnAny;
+            const visAlertActive = alertVisCeilingEnabled && isVisOutOfLimits;
+            const ceilingAlertActive = alertVisCeilingEnabled && isCeilingOutOfLimits;
+
+            const isCardAlert = windAlertActive || visAlertActive || ceilingAlertActive;
             const isStale = age !== null && age > 120;
 
             return (
-                <div className={`relative bg-white border-4 rounded-xl p-2.5 flex flex-col h-full overflow-hidden transition-shadow duration-200 ${warnAny ? 'border-red-500 shadow-sm shadow-red-500/10' : 'border-slate-200 shadow-sm hover:shadow-md'}`}>
-                    {isStale && <div className="absolute inset-0 pointer-events-none opacity-5" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #000 0px, #000 2px, transparent 2px, transparent 8px)'}} />}
-                    <div className="flex justify-between items-center mb-1.5 z-10">
-                        <div className="flex items-baseline gap-2">
-                            <h2 className="text-lg font-bold tracking-widest text-slate-900">{airport.code}</h2>
-                            <div className="flex items-center gap-1 text-[10px] text-slate-500 font-medium">
-                                <Icons.Clock className={isStale ? "text-amber-500" : ""} />
-                                <span className={isStale ? "text-amber-600 font-semibold" : ""}>{age ?? "--"}m</span>
+                <div className={`relative bg-white border-2 rounded-xl p-2.5 flex flex-col h-full overflow-hidden transition-all duration-200 ${
+                    isCardAlert 
+                        ? 'border-red-500 shadow-md shadow-red-500/10 ring-1 ring-red-500' 
+                        : 'border-slate-200 shadow-2xs hover:border-slate-300'
+                }`}>
+                    {isStale && (
+                        <div className="absolute inset-0 pointer-events-none opacity-5 z-0" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #000 0px, #000 2px, transparent 2px, transparent 8px)'}} />
+                    )}
+
+                    {/* TOP HEADER: Code, Age, Rain/Fog Icons, Alert Badges */}
+                    <div className="flex justify-between items-start mb-1 z-10 gap-1">
+                        <div className="flex items-center gap-1.5">
+                            <h2 className="text-base font-bold tracking-wider text-slate-900 leading-none">{airport.code}</h2>
+                            <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">{airport.name}</span>
+                            <div className="flex items-center gap-0.5 text-[9px] text-slate-500 font-mono ml-1">
+                                <Icons.Clock className={isStale ? "text-red-500" : ""} />
+                                <span className={isStale ? "text-red-600 font-bold" : ""}>{age ?? "--"}m</span>
                             </div>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                            {lowVis && <div className="text-slate-400" title="Low visibility/Fog"><Icons.CloudFog /></div>}
-                            {rain && <div className="text-blue-600" title="Rain reported"><Icons.CloudRain /></div>}
-                        </div>
-                    </div>
-                    <div className="flex-1 grid grid-cols-[1fr_auto] gap-2 items-center z-10 min-h-0">
-                        <div className="flex flex-col gap-1 overflow-hidden pr-1">
-                            {rows.map((r, i) => (
-                                <div key={i} className={`flex justify-between items-center gap-1.5 text-[10px] font-mono pb-0.5 border-b border-slate-50 last:border-0 last:pb-0 ${r.warn ? 'text-red-600 font-semibold' : 'text-slate-700'}`}>
-                                    <span className="truncate">{r.text}</span>
-                                    <span className="text-right whitespace-nowrap opacity-70">{r.limit}</span>
+
+                        {/* STATUS BADGES & PHENOMENA ICONS */}
+                        <div className="flex items-center gap-1 flex-wrap justify-end">
+                            {/* Alert badges */}
+                            {windAlertActive && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-bold bg-red-600 text-white animate-pulse" title="Vento fora de limites!">
+                                    <Icons.Wind />
+                                    <span>VENTO</span>
+                                </span>
+                            )}
+                            {visAlertActive && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-bold bg-red-600 text-white animate-pulse" title={`Visibilidade (${effectiveVis}m) abaixo do limite (${currentApproach.minVis}m)!`}>
+                                    <Icons.Eye />
+                                    <span>VIS {effectiveVis}m &lt; {currentApproach.minVis}m</span>
+                                </span>
+                            )}
+                            {ceilingAlertActive && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-bold bg-red-600 text-white" title={`Teto (${ceiling}ft) abaixo do limite (${currentApproach.minCeiling}ft)!`}>
+                                    <Icons.Cloud />
+                                    <span>TETO {ceiling}' &lt; {currentApproach.minCeiling}'</span>
+                                </span>
+                            )}
+
+                            {/* Weather icons */}
+                            {lowVisPhenom && (
+                                <div className="text-slate-400 p-0.5 rounded" title="Nevoeiro / Neblina reportada (FG/BR/HZ)">
+                                    <Icons.CloudFog />
                                 </div>
-                            ))}
-                            {rows.length === 0 && <div className="text-[10px] text-slate-400 italic">No wind data</div>}
-                        </div>
-                        <div className="w-36 h-36 flex-shrink-0">
-                            <RunwayVisual runwayHeading={airport.rwy} bestRunway={best} arrowDir={arrow?.dir ?? null} arcStartAngle={arcFrom} arcEndAngle={arcTo} />
+                            )}
+                            {rain && (
+                                <div className="text-blue-600 p-0.5 rounded" title="Chuva reportada (Pista Molhada)">
+                                    <Icons.CloudRain />
+                                </div>
+                            )}
                         </div>
                     </div>
-                    <div className="mt-1.5 pt-1.5 border-t border-slate-50 z-10">
-                        <p className="font-mono text-[9px] text-slate-400 leading-tight line-clamp-2 break-words">{metar}</p>
+
+                    {/* MAIN CONTENT: Left (Wind & Minima) + Right (Runway Compass) */}
+                    <div className="flex-1 grid grid-cols-[1fr_auto] gap-2 items-center z-10 min-h-0">
+                        {/* LEFT COLUMN */}
+                        <div className="flex flex-col justify-between h-full overflow-hidden pr-0.5 text-[10px]">
+                            {/* 1. Wind rows */}
+                            <div className="flex flex-col gap-0.5 pb-1 border-b border-slate-100">
+                                {windRows.map((r, i) => (
+                                    <div key={i} className={`flex justify-between items-center gap-1 font-mono leading-tight ${r.warn ? 'text-red-600 font-bold bg-red-50/80 px-1 rounded' : 'text-slate-700'}`}>
+                                        <span className="truncate">{r.text}</span>
+                                        <span className="text-right whitespace-nowrap opacity-75 font-sans text-[9px]">{r.limit}</span>
+                                    </div>
+                                ))}
+                                {windRows.length === 0 && <div className="text-slate-400 italic">Sem vento disponível</div>}
+                            </div>
+
+                            {/* 2. Approach Minima Section (TETO & VIS) */}
+                            <div className="pt-1 flex flex-col gap-1">
+                                {/* Runway selector & Approach name */}
+                                <div className="flex items-center justify-between gap-1 text-[9px]">
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-slate-400 font-semibold uppercase text-[8px]">APCH RWY:</span>
+                                        <div className="flex items-center gap-0.5">
+                                            {approaches.map((ap) => {
+                                                const isSelected = ap.rwy === activeRwyNum || (airport.code === "SJZ" && ((activeRwyNum === "13" && ap.rwy === "13") || (activeRwyNum === "31" && ap.rwy === "31")));
+                                                const isFavoured = ap.rwy === naturalBestRwyNum || (airport.code === "SJZ" && ((naturalBestRwyNum === "13" && ap.rwy === "13") || (naturalBestRwyNum === "31" && ap.rwy === "31")));
+                                                return (
+                                                    <button
+                                                        key={ap.rwy}
+                                                        onClick={() => setManualRwy(ap.rwy)}
+                                                        className={`px-1.5 py-0.5 rounded text-[9px] font-bold font-mono transition-colors cursor-pointer ${
+                                                            isSelected 
+                                                                ? 'bg-blue-600 text-white shadow-2xs' 
+                                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                        }`}
+                                                        title={`Selecionar RWY ${ap.displayRwy || ap.rwy} (${ap.apch})`}
+                                                    >
+                                                        {ap.rwy}{isFavoured ? '★' : ''}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                    <span className="font-mono text-slate-500 font-semibold text-[8px] truncate max-w-[110px]" title={currentApproach?.apch}>
+                                        {currentApproach?.apch}
+                                    </span>
+                                </div>
+
+                                {/* Comparison Grid: VIS & TETO */}
+                                <div className="grid grid-cols-2 gap-1 text-[9px] font-mono">
+                                    {/* Visibility block */}
+                                    <div className={`p-1 rounded flex flex-col border ${
+                                        visAlertActive 
+                                            ? 'bg-red-50 border-red-300 text-red-900 font-semibold ring-1 ring-red-300' 
+                                            : isVisOutOfLimits && !alertVisCeilingEnabled
+                                            ? 'bg-slate-50 border-slate-200 text-slate-600'
+                                            : 'bg-emerald-50/50 border-emerald-200/60 text-emerald-900'
+                                    }`}>
+                                        <div className="flex items-center justify-between text-[8px] uppercase tracking-wider opacity-75">
+                                            <span>VIS / RVR</span>
+                                            <span>MÍN {currentApproach?.minVis}m</span>
+                                        </div>
+                                        <div className="flex items-center justify-between mt-0.5">
+                                            <span className="font-bold text-[10px] truncate">
+                                                {runwayRvr !== null ? `RVR ${runwayRvr}m` : (vis !== null ? (vis >= 9999 ? '≥10 km' : `${vis}m`) : '--')}
+                                            </span>
+                                            {isVisOutOfLimits ? (
+                                                <span className="text-red-600 font-bold" title="Abaixo do limite de visibilidade">⚠️ &lt; MÍN</span>
+                                            ) : (
+                                                <span className="text-emerald-600 text-[8px] font-sans font-bold">✓ OK</span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Ceiling block */}
+                                    <div className={`p-1 rounded flex flex-col border ${
+                                        ceilingAlertActive 
+                                            ? 'bg-red-50 border-red-300 text-red-900 font-semibold ring-1 ring-red-300' 
+                                            : isCeilingOutOfLimits && !alertVisCeilingEnabled
+                                            ? 'bg-slate-50 border-slate-200 text-slate-600'
+                                            : 'bg-emerald-50/50 border-emerald-200/60 text-emerald-900'
+                                    }`}>
+                                        <div className="flex items-center justify-between text-[8px] uppercase tracking-wider opacity-75">
+                                            <span>TETO</span>
+                                            <span>MÍN {currentApproach?.minCeiling}'</span>
+                                        </div>
+                                        <div className="flex items-center justify-between mt-0.5">
+                                            <span className="font-bold text-[10px] truncate" title={rawCeilingText}>
+                                                {ceiling !== null ? `${ceiling} ft` : (isCavok ? 'CAVOK' : 'S/ Teto')}
+                                            </span>
+                                            {isCeilingOutOfLimits ? (
+                                                <span className="text-red-600 font-bold" title="Abaixo do limite de teto">⚠️ &lt; MÍN</span>
+                                            ) : (
+                                                <span className="text-emerald-600 text-[8px] font-sans font-bold">✓ OK</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* RIGHT COLUMN: Runway Compass Visual */}
+                        <div className="w-32 h-32 flex-shrink-0 flex items-center justify-center">
+                            <RunwayVisual 
+                                runwayHeading={airport.rwy} 
+                                bestRunway={bestHdg} 
+                                selectedRunwayHdg={manualRwy ? (parseInt(manualRwy, 10) * 10) : null}
+                                arrowDir={arrow?.dir ?? null} 
+                                arcStartAngle={arcFrom} 
+                                arcEndAngle={arcTo} 
+                            />
+                        </div>
+                    </div>
+
+                    {/* BOTTOM: Raw METAR Text */}
+                    <div className="mt-1 pt-1 border-t border-slate-100 z-10 flex items-center justify-between gap-2">
+                        <p className="font-mono text-[9px] text-slate-400 leading-tight truncate flex-1" title={metar}>
+                            {metar}
+                        </p>
                     </div>
                 </div>
             );
         };
 
+        // --- APPROACH MINIMA REFERENCE TABLE MODAL ---
+        const MinimaTableModal = ({ isOpen, onClose }) => {
+            if (!isOpen) return null;
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full border border-slate-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-150">
+                        {/* Modal Header */}
+                        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                            <div>
+                                <h3 className="text-base font-bold text-slate-900">Tabela de Mínimos Operacionais (AIP Açores)</h3>
+                                <p className="text-xs text-slate-500">Mínimos operacionais de visibilidade (VIS/RVR) e teto de nuvens (TETO) por pista e tipo de aproximação.</p>
+                            </div>
+                            <button 
+                                onClick={onClose} 
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
+                            >
+                                <Icons.Close />
+                            </button>
+                        </div>
+
+                        {/* Table Content */}
+                        <div className="p-6 max-h-[70vh] overflow-y-auto custom-scroll">
+                            <div className="overflow-x-auto rounded-lg border border-slate-200 shadow-2xs">
+                                <table className="w-full text-left text-xs font-mono">
+                                    <thead className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200">
+                                        <tr>
+                                            <th className="py-2.5 px-4">AD</th>
+                                            <th className="py-2.5 px-3">RWY</th>
+                                            <th className="py-2.5 px-4">APCH</th>
+                                            <th className="py-2.5 px-4 text-right">VIS / RVR (m)</th>
+                                            <th className="py-2.5 px-4 text-right">TETO (ft)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {Object.entries(approachLimitsTable).map(([ad, rwys]) => (
+                                            rwys.map((item, idx) => (
+                                                <tr key={`${ad}-${item.rwy}`} className="hover:bg-blue-50/40 transition-colors">
+                                                    {idx === 0 ? (
+                                                        <td className="py-2.5 px-4 font-bold text-slate-900 align-top bg-slate-50/50" rowSpan={rwys.length}>
+                                                            {ad}
+                                                        </td>
+                                                    ) : null}
+                                                    <td className="py-2 px-3 font-semibold text-slate-800">{item.displayRwy || item.rwy}</td>
+                                                    <td className="py-2 px-4 text-slate-600">{item.apch}</td>
+                                                    <td className="py-2 px-4 text-right font-bold text-blue-600">{item.minVis}{item.note || ''}</td>
+                                                    <td className="py-2 px-4 text-right font-bold text-indigo-600">{item.minCeiling}{item.note || ''}</td>
+                                                </tr>
+                                            ))
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200 text-[11px] text-red-900 font-sans space-y-1">
+                                <p className="font-semibold">Notas de Aplicação:</p>
+                                <p>• <strong>VIS/RVR (m):</strong> Visibilidade mínima em metros. Caso a pista ativa reporte RVR no METAR, este prevalece.</p>
+                                <p>• <strong>TETO (ft):</strong> Altura mínima do teto (camadas BKN ou OVC, ou visibilidade vertical VV) em pés.</p>
+                                <p>• <strong>* GRW:</strong> Mínimos de circling sujeitos a restrições diurnas/noturnas e VMC.</p>
+                                <p>• <strong>*** SJZ:</strong> Aproximações exclusivamente visuais sujeitas a condições meteorológicas de voo visual (VMC).</p>
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 flex justify-end">
+                            <button
+                                onClick={onClose}
+                                className="px-4 py-1.5 bg-slate-800 text-white rounded-lg text-xs font-semibold hover:bg-slate-900 transition-colors cursor-pointer"
+                            >
+                                Fechar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- MAIN APPLICATION COMPONENT ---
         const App = () => {
+            const [alertWindEnabled, setAlertWindEnabled] = useState(true);
+            const [alertVisCeilingEnabled, setAlertVisCeilingEnabled] = useState(true);
+            const [isMinimaModalOpen, setIsMinimaModalOpen] = useState(false);
+            const [refreshKey, setRefreshKey] = useState(0);
+
+            const handleManualRefresh = () => {
+                setRefreshKey(prev => prev + 1);
+            };
+
             return (
                 <div className="h-screen bg-slate-50 text-slate-900 font-sans flex flex-col overflow-hidden">
-                    <header className="bg-white border-b border-slate-200 z-50 shadow-sm flex-shrink-0">
+                    {/* APP HEADER */}
+                    <header className="bg-white border-b border-slate-200 z-40 shadow-2xs flex-shrink-0">
                         <div className="w-full px-4 h-14 flex items-center justify-between">
+                            {/* Brand & Title */}
                             <div className="flex items-center gap-3">
-                                <div className="bg-blue-600 p-1.5 rounded-lg text-white"><Icons.Plane /></div>
-                                <div className="flex items-start gap-1">
-                                    <h1 className="text-lg font-bold tracking-tight text-slate-900">AEROPORTOS <span className="text-blue-600">RAA</span></h1>
-                                    <span className="text-[8px] text-slate-400 font-medium mt-0.5">© Pedro Vicente</span>
+                                <div className="bg-blue-600 p-2 rounded-lg text-white shadow-xs">
+                                    <Icons.Plane />
+                                </div>
+                                <div>
+                                    <div className="flex items-baseline gap-1.5">
+                                        <h1 className="text-base font-bold tracking-tight text-slate-900">
+                                            AEROPORTOS <span className="text-blue-600">RAA</span>
+                                        </h1>
+                                        <span className="text-[9px] text-slate-400 font-medium hidden sm:inline">© Pedro Vicente</span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 font-medium hidden md:block">
+                                        v2.0
+                                    </p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-6 text-xs font-medium text-slate-500">
-                                <div className="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="blue" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/></svg><span>Chuva</span></div>
-                                <div className="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="grey" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M5 22h14"/><path d="M7 18h10"/></svg><span>Visibilidade reduzida</span></div>
+
+                            {/* CONTROLS & TOGGLES */}
+                            <div className="flex items-center gap-3 text-xs font-medium">
+                                {/* Option Toggle: Wind Alert */}
+                                <label className="flex items-center gap-1.5 cursor-pointer select-none px-2 py-1 rounded hover:bg-slate-100 transition-colors">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={alertWindEnabled} 
+                                        onChange={(e) => setAlertWindEnabled(e.target.checked)}
+                                        className="w-3.5 h-3.5 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+                                    />
+                                    <span className="flex items-center gap-1 text-slate-700">
+                                        <Icons.Wind />
+                                        <span className="hidden sm:inline">Alertar</span> Vento
+                                    </span>
+                                </label>
+
+                                {/* Option Toggle: VIS & Vertical Visibility Alert (USER'S REQUESTED OPTION) */}
+                                <label className="flex items-center gap-1.5 cursor-pointer select-none px-2.5 py-1 rounded bg-blue-50/90 border border-blue-200 text-blue-900 font-semibold hover:bg-blue-100 transition-colors shadow-2xs">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={alertVisCeilingEnabled} 
+                                        onChange={(e) => setAlertVisCeilingEnabled(e.target.checked)}
+                                        className="w-3.5 h-3.5 text-blue-600 rounded border-blue-300 focus:ring-blue-500 cursor-pointer"
+                                    />
+                                    <span className="flex items-center gap-1">
+                                        <Icons.Eye />
+                                        <span>Alertar VIS / Teto</span>
+                                    </span>
+                                </label>
+
+                                {/* Minima Reference Table Button */}
+                                <button
+                                    onClick={() => setIsMinimaModalOpen(true)}
+                                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors text-xs font-medium cursor-pointer"
+                                    title="Consultar tabela de mínimos de aproximação"
+                                >
+                                    <Icons.Table />
+                                    <span className="hidden sm:inline">Tabela Mínimos</span>
+                                </button>
+
+                                {/* Manual Refresh Button */}
+                                <button
+                                    onClick={handleManualRefresh}
+                                    className="flex items-center gap-1 p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
+                                    title="Atualizar METARs agora"
+                                >
+                                    <Icons.Refresh />
+                                </button>
+
+                                {/* Legend: Rain & Low Vis */}
+                                <div className="hidden lg:flex items-center gap-3.5 text-[11px] text-slate-500 pl-3 border-l border-slate-200">
+                                    <div className="flex items-center gap-1.5 text-blue-600 font-medium">
+                                        <Icons.CloudRain />
+                                        <span>Chuva</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-slate-500 font-medium">
+                                        <Icons.CloudFog />
+                                        <span>Vis. Reduzida</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </header>
+
+                    {/* MAIN 3x3 AIRPORTS GRID */}
                     <main className="flex-1 w-full p-2 overflow-hidden">
-                        <div className="grid grid-cols-3 grid-rows-3 gap-2 h-full">
-                            {airports.map((airport) => <AirportCard key={airport.code} airport={airport} />)}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 grid-rows-none lg:grid-rows-3 gap-2 h-full overflow-y-auto lg:overflow-hidden custom-scroll">
+                            {airports.map((airport) => (
+                                <AirportCard 
+                                    key={airport.code} 
+                                    airport={airport} 
+                                    alertWindEnabled={alertWindEnabled}
+                                    alertVisCeilingEnabled={alertVisCeilingEnabled}
+                                    refreshKey={refreshKey}
+                                />
+                            ))}
                         </div>
                     </main>
+
+                    {/* MODAL: AIP AZORES MINIMA TABLE */}
+                    <MinimaTableModal 
+                        isOpen={isMinimaModalOpen} 
+                        onClose={() => setIsMinimaModalOpen(false)} 
+                    />
                 </div>
             );
         };
