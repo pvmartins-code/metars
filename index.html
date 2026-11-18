@@ -462,59 +462,27 @@
             const [loading, setLoading] = useState(true);
             const [manualRwy, setManualRwy] = useState(null);
 
+            const fetchMetar = useCallback(async (retry = true) => {
+                try {
+                    const res = await fetch(`https://tgftp.nws.noaa.gov/data/observations/metar/stations/${airport.icao}.TXT`);
+const text = await res.text();
 
-const fetchMetar = useCallback(async (retry = true) => {
-    try {
+const metaro = text.split('\n')[1].trim();
 
-        const url = `https://aviationweather.gov/api/data/metar?ids=${airport.icao}&format=json`;
-
-        const res = await fetch(
-            `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
-        );
-
-        if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
-        }
-
-        const data = await res.json();
-
-        if (!Array.isArray(data) || data.length === 0) {
-            throw new Error("Empty METAR");
-        }
-
-        const metaro =
-            data[0].rawOb ||
-            data[0].rawText ||
-            data[0].raw_text;
-
-        if (!metaro || metaro.length < 10) {
-            throw new Error("Invalid METAR");
-        }
-
-        console.log(`${airport.code}:`, metaro);
-
-        setMetar(
-            metaro.replace(/^METAR\s+/i, "").trim()
-        );
-
-        setError(false);
-        setLoading(false);
-
-    } catch (err) {
-
-        console.error(
-            `Erro ao obter METAR ${airport.code}:`,
-            err
-        );
-
-        if (retry) {
-            setTimeout(() => fetchMetar(false), 1500);
-        } else {
-            if (!metar) setError(true);
-            setLoading(false);
-        }
-    }
-}, [airport.icao, airport.code, metar]);
+console.log(metaro);
+                    if (!metaro || metaro().length < 10) throw new Error("Empty METAR");
+                    setMetar(metaro);
+                    setError(false);
+                    setLoading(false);
+                } catch (err) {
+                    if (retry) {
+                        setTimeout(() => fetchMetar(false), 1500);
+                    } else {
+                        if (!metar) setError(true);
+                        setLoading(false);
+                    }
+                }
+            }, [airport.icao, metar]);
 
             useEffect(() => {
                 fetchMetar();
@@ -942,7 +910,7 @@ const fetchMetar = useCallback(async (retry = true) => {
                                         <span className="text-[9px] text-slate-400 font-medium hidden sm:inline">© Pedro Vicente</span>
                                     </div>
                                     <p className="text-[10px] text-slate-500 font-medium hidden md:block">
-                                        v2.0
+                                        Monitorização em tempo real de limites operacionais DH8 na RAA
                                     </p>
                                 </div>
                             </div>
